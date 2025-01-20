@@ -1,0 +1,1 @@
+# fatality-cs2-hook-lib
