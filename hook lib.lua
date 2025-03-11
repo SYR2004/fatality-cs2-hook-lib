@@ -169,14 +169,7 @@ local function CreateInlineHook(pTarget, pDetour, szType)
 
     ffi.copy(arrBackUp, pTargetFn, ffi.sizeof(arrBackUp))
     ffi.cast("uintptr_t*", arrShellCode + 0x6)[0] = ffi.cast("uintptr_t", ffi.cast(szType, function(...)
-        local bSuccessfully, pResult = pcall(pDetour, __Object, ...)
-        if not bSuccessfully then
-            __Object:Remove()
-            print(("[hook library]: unexception runtime error -> %s"):format(pResult))
-            return pTargetFn(...)
-        end
-
-        return pResult
+        return pDetour(__Object, ...)
     end))
 
     __Object.__index = setmetatable(__Object, {
@@ -186,13 +179,7 @@ local function CreateInlineHook(pTarget, pDetour, szType)
             end
 
             self:Detach()
-            local bSuccessfully, pResult = pcall(self.pTarget, ...)
-            if not bSuccessfully then
-                self.bValid = false
-                print(("[hook library]: runtime error -> %s"):format(pResult))
-                return nil
-            end
-
+            local pResult = self.pTarget(...)
             self:Attach()
             return pResult
         end,
@@ -271,14 +258,7 @@ local function CreateVtableHook(pInterface, pDetour, nIndex, szType)
     }
 
     __Object.pCallBackDetourFn = ffi.cast(szType, function(...)
-        local bSuccessfully, pResult = pcall(pDetour, __Object, ...)
-        if not bSuccessfully then
-            __Object:Remove()
-            print(("[vtable hook]: unexception runtime error -> %s"):format(pResult))
-            return __Object.pTargetOriginalFn(...)
-        end
-
-        return pResult
+        return pDetour(__Object, ...)
     end)
 
     __Object.__index = setmetatable(__Object, {
@@ -287,13 +267,7 @@ local function CreateVtableHook(pInterface, pDetour, nIndex, szType)
                 return nil
             end
 
-            local bSuccessfully, pResult = pcall(self.pTargetOriginalFn, ...)
-            if not bSuccessfully then
-                self:Detach()
-                return nil
-            end
-
-            return pResult
+            return self.pTargetOriginalFn(...)
         end,
 
         __index = {
